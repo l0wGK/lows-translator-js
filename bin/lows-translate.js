@@ -9,19 +9,43 @@
 const { LowsTranslator, LowsTranslatorError } = require("../index.cjs");
 
 const argv = process.argv.slice(2);
-const flag = (name, short) => {
+
+/** A flag that takes a value. Returns the value, or null if absent. */
+const value = (name, short) => {
   const i = argv.findIndex((a) => a === `--${name}` || (short && a === `-${short}`));
   if (i < 0) return null;
   const v = argv[i + 1];
-  argv.splice(i, v && !v.startsWith("-") ? 2 : 1);
-  return v && !v.startsWith("-") ? v : true;
+  // A flag with nothing after it used to return the boolean `true`, which then
+  // travelled all the way to the wire as `target_lang: true`. Refuse it here.
+  if (v === undefined || v.startsWith("-")) {
+    console.error(`--${name} needs a value, for example --${name} en`);
+    process.exit(1);
+  }
+  argv.splice(i, 2);
+  return v;
 };
 
-const wantHelp = flag("help", "h");
-const to = flag("to", "t");
-const from = flag("from", "f");
-const listLangs = flag("languages", "l");
-const showUsage = flag("usage", "u");
+/** A flag that takes no value, so it must not eat the next argument. */
+const has = (name, short) => {
+  const i = argv.findIndex((a) => a === `--${name}` || (short && a === `-${short}`));
+  if (i < 0) return false;
+  argv.splice(i, 1);
+  return true;
+};
+
+const wantHelp = has("help", "h");
+const listLangs = has("languages", "l");
+const showUsage = has("usage", "u");
+const to = value("to", "t");
+const from = value("from", "f");
+
+// Anything flag-shaped still in argv is a typo. Left alone it becomes part of
+// the text, so `--too en` would be silently translated and charged for.
+const stray = argv.find((a) => a.startsWith("--") || /^-[a-zA-Z]$/.test(a));
+if (stray && !wantHelp) {
+  console.error(`Unknown option ${stray}. Try --help.`);
+  process.exit(1);
+}
 const text = argv.join(" ").trim();
 
 if (wantHelp || (!text && !listLangs && !showUsage)) {

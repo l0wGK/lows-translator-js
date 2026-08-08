@@ -14,7 +14,12 @@ export interface LowsTranslatorOptions {
   fetch?: typeof globalThis.fetch;
 }
 
-export interface TranslateOptions {
+export interface RequestOptions {
+  /** Cancel an in-flight request. A cancellation is never retried. */
+  signal?: AbortSignal;
+}
+
+export interface TranslateOptions extends RequestOptions {
   /** Two-letter target language, e.g. "en". */
   to: string;
   /** Two-letter source. Omit to detect. */
@@ -47,12 +52,21 @@ export interface Usage {
   resets: string;
 }
 
+/** One input that failed inside `translateAll`. */
+export interface TranslationFailure {
+  /** Position in the array you passed in. */
+  index: number;
+  text: string;
+  error: LowsTranslatorError;
+}
+
 /**
  * Match on `code`, never on `message`: messages get reworded, codes do not.
  *
- * Known codes: `no_api_key`, `no_target`, `no_text`, `invalid_key`,
+ * Known codes: `no_api_key`, `no_target`, `no_text`, `no_fetch`, `invalid_key`,
  * `unsupported_language`, `too_long`, `undetected`, `daily_limit`, `busy`,
- * `unavailable`, `engine_error`, `timeout`, `network_error`, `bad_response`.
+ * `unavailable`, `engine_error`, `timeout`, `aborted`, `network_error`,
+ * `bad_response`.
  */
 export class LowsTranslatorError extends Error {
   name: "LowsTranslatorError";
@@ -63,8 +77,12 @@ export class LowsTranslatorError extends Error {
   retryAfter: number;
   /** Out of characters for the day; waiting minutes will not help. */
   readonly isQuotaExhausted: boolean;
-  /** Worth trying again shortly. Excludes daily_limit by design. */
+  /** Worth trying again shortly. Excludes daily_limit and aborted by design. */
   readonly isRetryable: boolean;
+  /** Only on an error from `translateAll`: successes by input index, null where one failed. */
+  results?: (Translation | null)[];
+  /** Only on an error from `translateAll`: every failure, in input order. */
+  failures?: TranslationFailure[];
 }
 
 export class LowsTranslator {
@@ -75,12 +93,17 @@ export class LowsTranslator {
   retries: number;
   /** Translate one piece of text. */
   translate(text: string, options: TranslateOptions): Promise<Translation>;
-  /** Translate many, bounded concurrency. N requests: there is no batch endpoint. */
+  /**
+   * Translate many, bounded concurrency. N requests: there is no batch endpoint.
+   *
+   * Throws if any input fails, but the thrown error carries `results` and
+   * `failures` so the successful translations are not lost.
+   */
   translateAll(texts: readonly string[], options: TranslateManyOptions): Promise<Translation[]>;
-  /** Every target language as two-letter codes. Needs no API key. */
-  languages(): Promise<string[]>;
+  /** Every target language as short codes, e.g. "sv", "fil". Needs no API key. */
+  languages(options?: RequestOptions): Promise<string[]>;
   /** Today's usage for this key. */
-  usage(): Promise<Usage>;
+  usage(options?: RequestOptions): Promise<Usage>;
 }
 
 export const VERSION: string;

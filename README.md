@@ -80,7 +80,7 @@ The key falls back to `process.env.LOWS_API_KEY`, so in most projects you never 
 | `baseUrl` | `https://lows.gg` | |
 | `fetch` | global | inject one for tests or a proxy |
 
-### `translate(text, { to, from? })`
+### `translate(text, { to, from?, signal? })`
 
 ```js
 const r = await lt.translate("god morgon", { to: "en", from: "sv" });
@@ -98,6 +98,8 @@ That is a deliberate trade. "god morgon" is Swedish, Norwegian and Danish depend
 
 `unchanged` is `true` when the source already matched the target. Nothing was translated and nothing was charged, which is worth knowing if you are looping over a mixed channel.
 
+Empty, blank or non-string `text` is refused locally as `no_text`, without spending a request.
+
 ### `translateAll(texts, { to, concurrency? })`
 
 ```js
@@ -108,6 +110,29 @@ const rows = await lt.translateAll(
 ```
 
 Results come back in input order. This is a convenience, not a batch endpoint: it is one request per text against your quota.
+
+**If any one text fails, it throws, but the error carries the work that succeeded.** `undetected` is common on short text by design, and losing ninety-nine good translations because the hundredth was three characters long is not a useful default:
+
+```js
+try {
+  const rows = await lt.translateAll(texts, { to: "sv" });
+} catch (e) {
+  e.results;    // translations at their input index, null where one failed
+  e.failures;   // [{ index, text, error }], in input order
+}
+```
+
+### Cancelling
+
+Every method takes a `signal`, so a request can be dropped when the user navigates away or a shutdown starts:
+
+```js
+const ac = new AbortController();
+setTimeout(() => ac.abort(), 2000);
+await lt.translate(text, { to: "en", signal: ac.signal });   // throws code "aborted"
+```
+
+A cancellation is never retried, and it wakes the client out of a pending retry backoff rather than waiting it out. This is separate from `timeout`, which is the client giving up on one attempt and *is* retried.
 
 ### `languages()`
 
@@ -153,8 +178,12 @@ try {
 | `unsupported_language` | not available yet; see `languages()` |
 | `busy` / `unavailable` | transient, retried for you |
 | `timeout` / `network_error` | never reached us, retried for you |
+| `no_text` / `no_target` / `no_api_key` | refused locally, before any request |
+| `aborted` | you cancelled it through `signal` |
 
 **Retries are deliberate about what they do not retry.** A `busy` queue or a network blip is retried with backoff, honouring `Retry-After`. A `daily_limit` is **not**. It is a 429 like a throttle, but the window is a day, so retrying would be a busy-loop until midnight. Nor is any other 4xx: a bad key will not fix itself.
+
+`e.isRetryable` tells you whether the client would have tried again, so you can drive your own queue off it. It is an allowlist of genuinely transient codes plus 5xx, **not** "status is 0 or 5xx": every locally raised error has status 0, so that test made a missing API key look retryable and would spin a caller forever on a mistake no amount of waiting fixes.
 
 ## Command line
 
