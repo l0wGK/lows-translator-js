@@ -1,0 +1,18 @@
+# The tests use a stub fetch and touch no network, so they need no key and no
+# secrets — which is what makes it safe to run them on every pull request from
+# a stranger, on the repo whose whole purpose is attracting strangers.
+name: test
+on:
+  push: { branches: [main] }
+  pull_request:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: ['18', '20', '22']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '${{ matrix.node }}' }
+      - run: npm test

@@ -17,11 +17,11 @@
   ],
   "homepage": "https://lows.gg/api",
   "bugs": {
-    "url": "https://github.com/lowe/lows-translator-js/issues"
+    "url": "https://github.com/l0wGK/lows-translator-js/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/lowe/lows-translator-js.git"
+    "url": "git+https://github.com/l0wGK/lows-translator-js.git"
   },
   "license": "MIT",
   "author": "Low's Translator",
