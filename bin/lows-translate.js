@@ -29,13 +29,13 @@ if (wantHelp || (!text && !listLangs && !showUsage)) {
   lows-translate — translate text from the command line
 
     npx lows-translator "Hej, vem är du?" --to en
-    npx lows-translator "good morning" -t sv -f en
+    npx lows-translator "good morning everyone" -t sv -f en
     npx lows-translator --languages
     npx lows-translator --usage
 
   Options
     -t, --to <lang>     target language (required to translate)
-    -f, --from <lang>   source language (default: detect)
+    -f, --from <lang>   source language (default: detect; pass it for short text)
     -l, --languages     list every supported language
     -u, --usage         today's usage for your key
     -h, --help          this

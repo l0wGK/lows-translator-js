@@ -13,12 +13,36 @@ import { LowsTranslator } from "lows-translator";
 
 const lt = new LowsTranslator(process.env.LOWS_API_KEY);
 
-const r = await lt.translate("Hej <@1234>, kolla **det här** :kek:", { to: "en" });
+const r = await lt.translate(
+  "Hej <@1234>, vet du när eventet börjar? <:kek:987654321>",
+  { to: "en", from: "sv" },
+);
 console.log(r.text);
-// "Hey <@1234>, check **this out** :kek:"
+// "Hey <@1234>, do you know when the event starts? <:kek:987654321>"
 ```
 
-Every entity survived: the mention, the bold run and the custom emoji.
+That output is real, not illustrative. The mention and the custom emoji came back byte for byte.
+
+**What survives a translation:**
+
+| | |
+|---|---|
+| `<@1234>` `<@!1234>` `<@&1234>` | user and role mentions |
+| `<#1234>` | channel links |
+| `<:name:1234>` `<a:name:1234>` | custom and animated emoji |
+| `<t:1234:R>` | timestamps |
+| `**bold**` `*italic*` `~~strike~~` `||spoiler||` | markdown |
+| `` `code` `` and fenced blocks | code |
+| `https://…` | URLs |
+| `[[double brackets]]` | kept in the ORIGINAL language, brackets removed |
+
+That last one is a lever the others do not give you. Wrap a product name, a command or a username in `[[ ]]` and it comes out untranslated:
+
+```js
+await lt.translate("Vi använder [[Low Translator]] i alla kanaler nu",
+  { to: "en", from: "sv" });
+// "We use Low Translator in all channels now"
+```
 
 `require` works too — this ships both module formats from one implementation:
 
@@ -59,18 +83,28 @@ The key falls back to `process.env.LOWS_API_KEY`, so in most projects you never 
 ### `translate(text, { to, from? })`
 
 ```js
-const r = await lt.translate("god morgon", { to: "en" });
+const r = await lt.translate("god morgon", { to: "en", from: "sv" });
 // { text: "good morning", from: "sv", to: "en", engine: "ember", unchanged: false }
 ```
 
-Omit `from` and the language is detected. Pass it when you know — detection **refuses rather than guesses**, and a short greeting can genuinely be four Scandinavian languages.
+**Pass `from` whenever you know it.** Detection **refuses rather than guesses**, so short text throws `undetected` rather than coming back wrong:
+
+```js
+await lt.translate("god morgon", { to: "en" });   // throws: undetected
+await lt.translate("Hej, vem är du?", { to: "en" }); // fine — long enough
+```
+
+That is a deliberate trade. "god morgon" is Swedish, Norwegian and Danish depending on who typed it, and in chat a confidently wrong translation is worse than a question. If you have any idea of the source — a user's locale, a channel's language, the last thing they said — pass it and detection never runs.
 
 `unchanged` is `true` when the source already matched the target. Nothing was translated and nothing was charged, which is worth knowing if you are looping over a mixed channel.
 
 ### `translateAll(texts, { to, concurrency? })`
 
 ```js
-const rows = await lt.translateAll(["hello", "goodbye"], { to: "sv", concurrency: 4 });
+const rows = await lt.translateAll(
+  ["hello there, how are you?", "see you tomorrow"],
+  { to: "sv", from: "en", concurrency: 4 },
+);
 ```
 
 Results come back in input order. This is a convenience, not a batch endpoint: it is one request per text against your quota.
@@ -115,7 +149,7 @@ try {
 | `invalid_key` | missing, malformed or revoked |
 | `daily_limit` | out of characters until 00:00 UTC |
 | `too_long` | over 2,000 characters in one call |
-| `undetected` | detection was not confident; pass `from` |
+| `undetected` | detection was not confident; pass `from`. Common on short text |
 | `unsupported_language` | not available yet; see `languages()` |
 | `busy` / `unavailable` | transient, retried for you |
 | `timeout` / `network_error` | never reached us, retried for you |
