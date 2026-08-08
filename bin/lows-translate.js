@@ -26,7 +26,7 @@ const text = argv.join(" ").trim();
 
 if (wantHelp || (!text && !listLangs && !showUsage)) {
   console.log(`
-  lows-translate — translate text from the command line
+  lows-translate: translate text from the command line
 
     npx lows-translator "Hej, vem är du?" --to en
     npx lows-translator "good morning everyone" -t sv -f en

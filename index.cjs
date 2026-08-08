@@ -4,7 +4,7 @@
 // Written in CommonJS with an ESM shim (index.mjs) rather than the other way
 // round, because the audience is Discord bot developers and a large share of
 // that ecosystem is still `require`. One implementation, both module systems,
-// no build step — a published package that needs compiling is a package whose
+// no build step. A published package that needs compiling is a package whose
 // source and its dist can disagree.
 //
 // No dependencies, and `fetch` is taken from the global. That is what makes
@@ -17,7 +17,7 @@ const DEFAULT_BASE = "https://lows.gg";
 /**
  * An error from the API, or from trying to reach it.
  *
- * `code` is the stable machine-readable string — match on it, not on `message`,
+ * `code` is the stable machine-readable string. Match on it, not on `message`,
  * which gets reworded. `status` is 0 when the request never reached the server.
  */
 class LowsTranslatorError extends Error {
@@ -39,7 +39,7 @@ class LowsTranslatorError extends Error {
    *
    * Deliberately excludes `daily_limit`: it is a 429 like a throttle, but the
    * window is a day, so retrying is a busy-loop until midnight. The retrying is
-   * done for you — this is exposed for callers driving their own queue.
+   * done for you; this is exposed for callers driving their own queue.
    */
   get isRetryable() {
     return this.status === 0 || this.status >= 500 || this.code === "busy" || this.code === "unavailable";

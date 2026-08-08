@@ -48,7 +48,7 @@ export interface Usage {
 }
 
 /**
- * Match on `code`, never on `message` — messages get reworded, codes do not.
+ * Match on `code`, never on `message`: messages get reworded, codes do not.
  *
  * Known codes: `no_api_key`, `no_target`, `no_text`, `invalid_key`,
  * `unsupported_language`, `too_long`, `undetected`, `daily_limit`, `busy`,
@@ -75,7 +75,7 @@ export class LowsTranslator {
   retries: number;
   /** Translate one piece of text. */
   translate(text: string, options: TranslateOptions): Promise<Translation>;
-  /** Translate many, bounded concurrency. N requests — there is no batch endpoint. */
+  /** Translate many, bounded concurrency. N requests: there is no batch endpoint. */
   translateAll(texts: readonly string[], options: TranslateManyOptions): Promise<Translation[]>;
   /** Every target language as two-letter codes. Needs no API key. */
   languages(): Promise<string[]>;

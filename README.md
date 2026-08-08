@@ -44,7 +44,7 @@ await lt.translate("Vi använder [[Low Translator]] i alla kanaler nu",
 // "We use Low Translator in all channels now"
 ```
 
-`require` works too — this ships both module formats from one implementation:
+`require` works too. This ships both module formats from one implementation:
 
 ```js
 const { LowsTranslator } = require("lows-translator");
@@ -91,10 +91,10 @@ const r = await lt.translate("god morgon", { to: "en", from: "sv" });
 
 ```js
 await lt.translate("god morgon", { to: "en" });   // throws: undetected
-await lt.translate("Hej, vem är du?", { to: "en" }); // fine — long enough
+await lt.translate("Hej, vem är du?", { to: "en" }); // fine, long enough
 ```
 
-That is a deliberate trade. "god morgon" is Swedish, Norwegian and Danish depending on who typed it, and in chat a confidently wrong translation is worse than a question. If you have any idea of the source — a user's locale, a channel's language, the last thing they said — pass it and detection never runs.
+That is a deliberate trade. "god morgon" is Swedish, Norwegian and Danish depending on who typed it, and in chat a confidently wrong translation is worse than a question. If you have any idea of the source (a user's locale, a channel's language, the last thing they said), pass it and detection never runs.
 
 `unchanged` is `true` when the source already matched the target. Nothing was translated and nothing was charged, which is worth knowing if you are looping over a mixed channel.
 
@@ -126,7 +126,7 @@ await lt.usage();
 
 ## Errors
 
-Everything throws `LowsTranslatorError`. Match on **`code`**, never on `message` — messages get reworded, codes do not.
+Everything throws `LowsTranslatorError`. Match on **`code`**, never on `message`: messages get reworded, codes do not.
 
 ```js
 import { LowsTranslator, LowsTranslatorError } from "lows-translator";
@@ -135,7 +135,7 @@ try {
   await lt.translate(text, { to: "en" });
 } catch (e) {
   if (e instanceof LowsTranslatorError && e.isQuotaExhausted) {
-    // out of characters until 00:00 UTC — queue it for tomorrow
+    // out of characters until 00:00 UTC, so queue it for tomorrow
   } else if (e.code === "undetected") {
     // could not tell the language; ask, or pass `from`
   } else {
@@ -154,7 +154,7 @@ try {
 | `busy` / `unavailable` | transient, retried for you |
 | `timeout` / `network_error` | never reached us, retried for you |
 
-**Retries are deliberate about what they do not retry.** A `busy` queue or a network blip is retried with backoff, honouring `Retry-After`. A `daily_limit` is **not** — it is a 429 like a throttle, but the window is a day, so retrying would be a busy-loop until midnight. Nor is any other 4xx: a bad key will not fix itself.
+**Retries are deliberate about what they do not retry.** A `busy` queue or a network blip is retried with backoff, honouring `Retry-After`. A `daily_limit` is **not**. It is a 429 like a throttle, but the window is a day, so retrying would be a busy-loop until midnight. Nor is any other 4xx: a bad key will not fix itself.
 
 ## Command line
 
@@ -168,13 +168,13 @@ The translation goes to stdout and everything else to stderr, so it pipes.
 
 ## Runs anywhere with fetch
 
-Node 18+, Bun, Deno, Cloudflare Workers, and the browser. Zero dependencies, and `fetch` comes from the global rather than a bundled HTTP library — which is what keeps that list short.
+Node 18+, Bun, Deno, Cloudflare Workers, and the browser. Zero dependencies, and `fetch` comes from the global rather than a bundled HTTP library, which is what keeps that list short.
 
 > In a browser, remember the key is in the page. Call this from your own backend.
 
 ## Getting a key
 
-The API is invite-only while it is in beta. Ask at **[lows.gg/api](https://lows.gg/api)** — you write a couple of sentences about what you are building, and a person reads it.
+The API is invite-only while it is in beta. Ask at **[lows.gg/api](https://lows.gg/api)**. You write a couple of sentences about what you are building, and a person reads it.
 
 It runs on our own hardware alongside a live Discord bot, which is why there is a person in the loop rather than a signup form: the cost of a bad integration here is not a bill, it is the bot getting slower for everyone.
 

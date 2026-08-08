@@ -66,7 +66,7 @@ test("a busy queue is retried, and the retry succeeds", async () => {
 });
 
 test("A DAILY LIMIT IS NEVER RETRIED", async () => {
-  // It is a 429 like a throttle, but the window is a day — retrying is a
+  // It is a 429 like a throttle, but the window is a day, so retrying is a
   // busy-loop until midnight, and the SDK doing that on a caller's behalf is
   // far worse than an error they can see.
   const f = stub(fail(429, "daily_limit", "Daily character limit reached.", { "retry-after": "3600" }));
