@@ -39,7 +39,8 @@
     "./package.json": "./package.json"
   },
   "bin": {
-    "lows-translate": "./bin/lows-translate.js"
+    "lows-translator": "bin/lows-translate.js",
+    "lows-translate": "bin/lows-translate.js"
   },
   "files": [
     "index.cjs",
