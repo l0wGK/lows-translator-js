@@ -1,0 +1,59 @@
+{
+  "name": "lows-translator",
+  "version": "0.1.0",
+  "description": "Translation API client built for chat: mentions, custom emoji and markdown survive translation instead of being mangled.",
+  "keywords": [
+    "translate",
+    "translation",
+    "translator",
+    "i18n",
+    "localization",
+    "discord",
+    "discord-bot",
+    "chat",
+    "api",
+    "api-client",
+    "deepl-alternative"
+  ],
+  "homepage": "https://lows.gg/api",
+  "bugs": {
+    "url": "https://github.com/lowe/lows-translator-js/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lowe/lows-translator-js.git"
+  },
+  "license": "MIT",
+  "author": "Low's Translator",
+  "type": "commonjs",
+  "main": "./index.cjs",
+  "module": "./index.mjs",
+  "types": "./index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "import": "./index.mjs",
+      "require": "./index.cjs",
+      "default": "./index.cjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "bin": {
+    "lows-translate": "./bin/lows-translate.js"
+  },
+  "files": [
+    "index.cjs",
+    "index.mjs",
+    "index.d.ts",
+    "bin/",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.js"
+  },
+  "sideEffects": false
+}
