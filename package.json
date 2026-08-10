@@ -1,6 +1,6 @@
 {
   "name": "lows-translator",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Translation API client built for chat: mentions, custom emoji and markdown survive translation instead of being mangled.",
   "keywords": [
     "translate",
