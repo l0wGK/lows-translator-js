@@ -44,6 +44,15 @@ export interface Translation {
   unchanged: boolean;
 }
 
+export interface Detection {
+  /** Two-letter code, lowercase, or null when nothing could be determined. */
+  language: string | null;
+  /** 0..1, or null when the model has not finished loading. */
+  confidence: number | null;
+  /** False for text too short to trust. It may still guess; this says not to lean on it. */
+  reliable: boolean;
+}
+
 export interface Usage {
   used: number;
   limit: number;
@@ -101,6 +110,16 @@ export class LowsTranslator {
    */
   translateAll(texts: readonly string[], options: TranslateManyOptions): Promise<Translation[]>;
   /** Every target language as short codes, e.g. "sv", "fil". Needs no API key. */
+  /**
+   * Which language a string is in, without translating it. Free: detection runs
+   * offline and is not charged against your character allowance.
+   *
+   * The single form rejects with `undetected` when nothing could be determined;
+   * the batch form returns `language: null` for that entry instead, so one
+   * unreadable string does not fail the rest.
+   */
+  detect(text: string, options?: RequestOptions): Promise<Detection>;
+  detect(texts: readonly string[], options?: RequestOptions): Promise<Detection[]>;
   languages(options?: RequestOptions): Promise<string[]>;
   /** Today's usage for this key. */
   usage(options?: RequestOptions): Promise<Usage>;

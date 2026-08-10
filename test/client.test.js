@@ -289,3 +289,64 @@ test("concurrency is not leaked into the request body", async () => {
   await new LowsTranslator({ apiKey: "k", fetch: f }).translateAll(["x"], { to: "en", concurrency: 3 });
   assert.deepEqual(Object.keys(JSON.parse(f.calls[0].init.body)).sort(), ["target_lang", "text"]);
 });
+
+// --- detect ----------------------------------------------------------------
+// Detection is the one call that costs nothing, which is exactly why it needs
+// tests: a client that quietly sends it to the wrong endpoint, or charges the
+// caller's quota by routing it through translate, would be hard to notice.
+
+test("detect posts to /v1/detect and unwraps the answer", async () => {
+  const f = stub(ok({ language: "sv", confidence: 0.98, reliable: true }));
+  const lt = new LowsTranslator({ apiKey: "k", fetch: f });
+  assert.deepEqual(await lt.detect("Hej, kan nagon hjalpa mig?"),
+    { language: "sv", confidence: 0.98, reliable: true });
+  assert.match(f.calls[0].url, /\/v1\/detect$/);
+  assert.deepEqual(JSON.parse(f.calls[0].init.body), { text: "Hej, kan nagon hjalpa mig?" });
+});
+
+test("an array becomes one round trip, not N", async () => {
+  const f = stub(ok({ results: [
+    { language: "en", confidence: 0.9, reliable: true },
+    { language: null, confidence: 0, reliable: false },
+  ] }));
+  const lt = new LowsTranslator({ apiKey: "k", fetch: f });
+  const out = await lt.detect(["hello there", "??"]);
+  assert.equal(f.calls.length, 1, "a batch must not fan out into one request per string");
+  assert.deepEqual(JSON.parse(f.calls[0].init.body), { texts: ["hello there", "??"] });
+  // One unreadable string in a batch does not fail the others: it comes back
+  // null and the caller decides. The single form throws instead (below).
+  assert.equal(out.length, 2);
+  assert.equal(out[1].language, null);
+  assert.equal(out[1].reliable, false);
+});
+
+test("a missing argument is refused before it reaches the wire", async () => {
+  // String(undefined) is the five-character string "undefined", which detects
+  // happily as English and tells the caller nothing true.
+  const f = stub(ok({ language: "en" }));
+  const lt = new LowsTranslator({ apiKey: "k", fetch: f });
+  for (const bad of [undefined, "", "   ", []]) {
+    const e = await lt.detect(bad).catch((err) => err);
+    assert.ok(e instanceof LowsTranslatorError, `${JSON.stringify(bad)} should be refused`);
+    assert.equal(e.code, "no_text");
+  }
+  assert.equal(f.calls.length, 0, "nothing should have been sent");
+});
+
+test("undetected surfaces as an error the caller can match on", async () => {
+  const f = stub(fail(422, "undetected", "Could not detect a language for that text."));
+  const lt = new LowsTranslator({ apiKey: "k", fetch: f, retries: 0 });
+  const e = await lt.detect("....").catch((err) => err);
+  assert.ok(e instanceof LowsTranslatorError);
+  assert.equal(e.code, "undetected");
+  assert.equal(e.status, 422);
+});
+
+test("detect still sends the key", async () => {
+  // Free does not mean unauthenticated: the request is counted, at zero
+  // characters, so abuse is visible.
+  const f = stub(ok({ language: "en", confidence: 1, reliable: true }));
+  await new LowsTranslator({ apiKey: "secret", fetch: f }).detect("hello");
+  const auth = f.calls[0].headers.Authorization || f.calls[0].headers.authorization;
+  assert.equal(auth, "Bearer secret");
+});

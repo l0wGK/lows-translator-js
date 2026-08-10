@@ -296,6 +296,43 @@ class LowsTranslator {
    * check coverage before you have one.
    * @returns {Promise<string[]>}
    */
+  /**
+   * Which language a string is in, without translating it.
+   *
+   * Free: detection runs offline, so it is not charged against your character
+   * allowance and does not consume your quota. Pass an array to classify a
+   * backlog in one round trip.
+   *
+   * The single form THROWS `undetected` when nothing could be determined, which
+   * is the 422 the API returns. The batch form does not: one unreadable string
+   * in fifty should not fail the other forty-nine, so its entry comes back with
+   * `language: null` and the caller decides.
+   */
+  async detect(text, options = {}) {
+    const many = Array.isArray(text);
+    const list = many ? text : [text];
+    // Same guard as translate(), and the same reason: String(undefined) is the
+    // five-character string "undefined", which detects perfectly happily as
+    // English and tells the caller nothing true.
+    if (!list.length || !list.some((t) => typeof t === "string" && t.trim())) {
+      throw new LowsTranslatorError("`text` must be a non-empty string.", { code: "no_text" });
+    }
+    const data = await this._request("/v1/detect", {
+      method: "POST",
+      signal: options.signal || null,
+      body: many ? { texts: list } : { text },
+    });
+    const shape = (d) => ({
+      /** Two-letter code, lowercase, or null when nothing could be determined. */
+      language: d.language ?? null,
+      /** 0..1, or null when the model has not finished loading. */
+      confidence: d.confidence ?? null,
+      /** False for text too short to trust. It may still guess; this says not to lean on it. */
+      reliable: Boolean(d.reliable),
+    });
+    return many ? (data.results || []).map(shape) : shape(data);
+  }
+
   async languages(options = {}) {
     const data = await this._request("/v1/languages", { auth: false, signal: options.signal || null });
     return data.languages || [];

@@ -134,6 +134,26 @@ await lt.translate(text, { to: "en", signal: ac.signal });   // throws code "abo
 
 A cancellation is never retried, and it wakes the client out of a pending retry backoff rather than waiting it out. This is separate from `timeout`, which is the client giving up on one attempt and *is* retried.
 
+### `detect(text | texts)`
+
+```js
+await lt.detect("Hej, kan nagon hjalpa mig?");
+// { language: "sv", confidence: 0.98, reliable: true }
+```
+
+**Free.** Detection runs offline, so it is not charged against your character allowance and does not touch your quota. It still needs your key, so the request is counted at zero characters.
+
+`reliable` is false for text too short to trust. It may still guess; treat that as a hint, not an answer.
+
+Pass an array to classify a backlog in one round trip:
+
+```js
+const rows = await lt.detect(["hello there", "bom dia", "??"]);
+// [{ language: "en", ... }, { language: "pt", ... }, { language: null, confidence: 0, reliable: false }]
+```
+
+The single form throws `undetected` when nothing could be determined. The batch form does not: one unreadable string in fifty should not fail the other forty-nine, so its entry comes back with `language: null` and you decide.
+
 ### `languages()`
 
 ```js
